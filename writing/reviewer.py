@@ -6,9 +6,13 @@ llm = ChatOllama(
 )
 
 
-def review_post(post):
+def review_post(post, topic=None):
+    topic = topic or {}
+    source_name = topic.get("source", "Source") if isinstance(topic, dict) else "Source"
+    source_type = topic.get("source_type", "") if isinstance(topic, dict) else ""
+
     prompt = f"""
-Rewrite this LinkedIn post to sound natural, technical, and human.
+Rewrite this LinkedIn post so it sounds like a thoughtful builder wrote it.
 
 Output ONLY the final post.
 
@@ -21,12 +25,13 @@ Hard rules:
 - No invented identity
 - No invented urgency
 - No motivational ending
-- No generic CTA like "Let's discuss"
+- No generic CTA like "Let's discuss", "What are your thoughts", or "How can we ensure"
 - Do not say "I encountered", "I experienced", or "As a young AI engineer"
 - Do not overclaim from a discussion source
 - Keep the source line at the end
-- Source format must be:
-  Source: <source name>
+- Source format must be exactly:
+  Source: {source_name}
+- Do not write "Source: News Outlet" unless the source name is actually News Outlet
 - Keep it between 130 and 200 words
 
 Style:
@@ -36,6 +41,8 @@ Style:
 - Calm tone
 - Builder/engineer perspective
 - Avoid corporate language
+- Prefer concrete failure modes over abstract strategy language
+- It is okay to end with a sharp observation instead of a question
 
 For discussion sources like Hacker News or Reddit:
 - Treat them as signals, not proof
@@ -55,6 +62,11 @@ Avoid these words/phrases:
 - substantial errors
 - disconcerting
 - Let's discuss
+- What are your thoughts
+- How can we ensure
+- develop strategies
+- user preferences and behaviors
+- dynamic consumer behavior
 - share our thoughts
 - utilizing
 - delve
@@ -84,14 +96,19 @@ Bad:
 
 Good:
 "one shared layer going down can break many services at once"
-Required structure:
-1. Sharp first line
-2. Explain the issue simply
-3. Add technical implication
-4. Add limitation or open question
-5. Add "My takeaway:"
-6. End with one specific question
+
+Do not use a visible template.
+Do not include "My takeaway:".
+Do not end with multiple questions.
+If you ask a question, ask only one concrete technical question.
+
 If the post sounds like a research abstract, rewrite it into a builder-style LinkedIn post using simple engineering language.
+
+Source name to preserve:
+{source_name}
+
+Source type:
+{source_type}
 
 POST:
 {post}

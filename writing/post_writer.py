@@ -20,17 +20,12 @@ def generate_post(state):
     source_type = topic.get("source_type", "")
 
     prompt = f"""
-You are writing a high-quality LinkedIn post for a technical AI audience.
--WRITE LIKE A HUMAN AT ANY COST. The post should feel like it was written by a thoughtful engineer, not an AI.
--Use the content type to guide the style and angle of the post, but do not feeled constrained by it. The content type is a hint, not a rule.
--Start with a sharp hook or observation.
--Explain the topic simply.
-The post should feel:
-- thoughtful
-- sharp
-- concise
-- natural
-- written by a real builder
+Write a LinkedIn post for a technical AI audience.
+
+The post should sound like a thoughtful builder explaining one concrete thing they noticed.
+It should not sound like an AI newsletter, a consultant memo, or a motivational post.
+
+Use the content type as a loose hint, not a template.
 
 Audience:
 - engineers
@@ -46,6 +41,9 @@ Writing style:
 - avoid generic excitement
 - prefer concrete observations
 - slightly opinionated is good
+- use simple engineering language
+- name real failure modes when possible
+- vary sentence length like a human would
 
 STRICT RULES:
 - Output ONLY the final LinkedIn post
@@ -53,11 +51,12 @@ STRICT RULES:
 - No hashtags
 - No markdown links
 - No raw URL inside the post body
-- No emojis unless genuinely useful
+- No emojis
 - Do not invent personal experience
 - Do not invent author names, paper results, metrics, or background
 - Do not overclaim
 - Keep it between 140 and 220 words
+- Keep the final source line exactly: Source: {source}
 
 NEVER start with:
 - "As an engineer"
@@ -67,6 +66,7 @@ NEVER start with:
 - "In today's AI landscape"
 - "In the rapidly evolving"
 - "Excited to share"
+
 STRICT ANTI-INVENTION RULES:
 - Never write in first person unless the source explicitly supports it.
 - Do not say "I encountered", "I experienced", "I worked on", or "I noticed in my own work".
@@ -74,6 +74,7 @@ STRICT ANTI-INVENTION RULES:
 - Do not invent urgency, risk, or impact level.
 - Do not turn a discussion into a confirmed fact.
 - If the source is Hacker News, Reddit, or a discussion forum, say "A discussion raised..." not "revealed" or "proved".
+
 Avoid these words/phrases:
 - As a young AI engineer
 - I've encountered
@@ -121,12 +122,23 @@ Avoid these words/phrases:
 - How soon can we expect
 - The secret lies
 - My perspective:
+- My takeaway:
+- What are your thoughts
+- How can we ensure
+- develop strategies
+- user preferences and behaviors
 - advancement
 - boundaries of
-End with a specific technical question, not a generic CTA.
+
+Ending:
+- You may end with one concrete technical question, but you do not have to.
+- Never end with a generic engagement question.
+- Do not ask more than one question.
+
 Example:
 Bad: "Let's discuss!"
-Good: "Would you trust a robot trained for one task extremely well, or one that adapts imperfectly across many tasks?"
+Good: "Would you trust the agent to buy, or only to narrow the options?"
+
 Prefer concrete engineering words over academic words.
 Example:
 Bad:
@@ -134,14 +146,17 @@ Bad:
 
 Good:
 "these systems change over time, depend on physical constraints, and can fail in rare edge cases"
-Preferred structure:
-1. Start with a sharp hook or observation.
-2. Explain the topic simply.
-3. Mention the technical implication.
-4. Add one limitation, risk, or open question.
-5. Add a personal takeaway.
-6. End with a thoughtful question.
-7. Add source at the end.
+
+Concrete beats abstract:
+Bad:
+"Consumer behavior is dynamic and unpredictable."
+
+Good:
+"A shopping agent has to deal with changing prices, seller trust, delivery dates, refunds, and users changing their mind halfway through."
+
+Do not use a visible template.
+Do not include "My takeaway:".
+Do not write a paragraph that only says the world is complex or unpredictable.
 
 Post context:
 
@@ -164,9 +179,9 @@ Source URL:
 {url}
 
 Source formatting rule:
-At the end, write only:
-Source type:
-{source_type}
+At the end, write exactly:
+Source: {source}
+
 If source_type is "hackernews" or "reddit":
 - Do not present the content as verified news.
 - Frame it as a discussion or signal.

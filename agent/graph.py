@@ -87,10 +87,14 @@ def review_post_node(state):
     print("\n[Node] Reviewing draft...")
 
     reviewed = review_post(
-        state["draft_post"]
+        state["draft_post"],
+        state.get("topic", {})
     )
 
-    cleaned = clean_post(reviewed)
+    cleaned = clean_post(
+        reviewed,
+        state.get("topic", {})
+    )
 
     return {
         "final_post": cleaned

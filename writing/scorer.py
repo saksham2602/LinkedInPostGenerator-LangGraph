@@ -1,4 +1,5 @@
 from langchain_ollama import ChatOllama
+import re
 
 llm = ChatOllama(model="mistral", temperature=0)
 
@@ -13,7 +14,11 @@ Give low score if:
 - sounds motivational
 - sounds generic
 - overclaims
+- uses a visible template like "My takeaway:"
+- ends with "What are your thoughts" or another generic CTA
 - has phrases like "let's delve", "future of AI", "bridging the gap"
+- repeats the same abstract idea without adding concrete details
+- uses placeholder sources like "Source: News Outlet"
 
 Return ONLY one number.
 
@@ -24,6 +29,10 @@ POST:
     result = llm.invoke(prompt).content.strip()
 
     try:
-        return int(result[0])
+        match = re.search(r"\b10\b|[1-9]", result)
+        if not match:
+            return 5
+
+        return int(match.group())
     except:
         return 5
