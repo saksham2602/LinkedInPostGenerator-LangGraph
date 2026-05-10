@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 
 from agent.graph import graph
+from evaluation.store import get_evaluation_summary, load_evaluations
 from storage.memory_store import load_memory
 
 
@@ -100,22 +101,27 @@ if not result:
 
 # ---------- Top Metrics ----------
 score = result.get("score", "-")
+evaluation = result.get("evaluation", {})
+evaluation_score = evaluation.get("evaluation_score", "-")
 content_type = result.get("content_type", "-")
 needs_image = result.get("needs_image", False)
 topic = result.get("topic", {})
 
-m1, m2, m3, m4 = st.columns(4)
+m1, m2, m3, m4, m5 = st.columns(5)
 
 with m1:
     st.metric("Quality Score", score)
 
 with m2:
-    st.metric("Content Type", content_type)
+    st.metric("Eval Score", evaluation_score)
 
 with m3:
-    st.metric("Image", "Yes" if needs_image else "No")
+    st.metric("Content Type", content_type)
 
 with m4:
+    st.metric("Image", "Yes" if needs_image else "No")
+
+with m5:
     source = topic.get("source", "unknown") if isinstance(topic, dict) else "unknown"
     st.metric("Source", source)
 
@@ -124,10 +130,11 @@ st.divider()
 
 
 # ---------- Main Tabs ----------
-tab1, tab2, tab3, tab4 = st.tabs(
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
     [
         "Preview",
         "Agent Reasoning",
+        "Evaluation",
         "Memory",
         "Raw State"
     ]
@@ -264,8 +271,65 @@ with tab2:
         st.info("No ranked trends found.")
 
 
-# ---------- Memory Tab ----------
+# ---------- Evaluation Tab ----------
 with tab3:
+    st.subheader("Current Post Evaluation")
+
+    if evaluation:
+        e1, e2, e3, e4, e5 = st.columns(5)
+
+        with e1:
+            st.metric("Overall", evaluation.get("evaluation_score", "-"))
+
+        with e2:
+            st.metric("Human Tone", evaluation.get("human_tone_score", "-"))
+
+        with e3:
+            st.metric("Specificity", evaluation.get("specificity_score", "-"))
+
+        with e4:
+            st.metric("Source", evaluation.get("source_faithfulness_score", "-"))
+
+        with e5:
+            st.metric("CTA", evaluation.get("cta_quality_score", "-"))
+
+        st.dataframe(
+            pd.DataFrame([evaluation]),
+            use_container_width=True
+        )
+    else:
+        st.info("No evaluation available for this run.")
+
+    st.subheader("Evaluation History")
+
+    evaluations = load_evaluations()
+    summary = get_evaluation_summary()
+
+    if summary:
+        s1, s2, s3, s4 = st.columns(4)
+
+        with s1:
+            st.metric("Evaluated Posts", summary.get("total_evaluated", 0))
+
+        with s2:
+            st.metric("Avg Eval Score", summary.get("avg_evaluation_score", 0))
+
+        with s3:
+            st.metric("Generic CTA Rate", summary.get("generic_cta_rate", 0))
+
+        with s4:
+            st.metric("Source Validity", summary.get("source_validity_rate", 0))
+
+        st.dataframe(
+            pd.DataFrame(evaluations[::-1]),
+            use_container_width=True
+        )
+    else:
+        st.info("No evaluation history yet.")
+
+
+# ---------- Memory Tab ----------
+with tab4:
     st.subheader("Post Memory")
 
     memory = load_memory()
@@ -301,6 +365,6 @@ with tab3:
 
 
 # ---------- Raw State Tab ----------
-with tab4:
+with tab5:
     st.subheader("Raw LangGraph State")
     st.json(result)

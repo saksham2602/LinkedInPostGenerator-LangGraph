@@ -28,7 +28,8 @@ def save_to_memory(state):
         "content_type": state.get("content_type", ""),
         "final_post": state.get("final_post", ""),
         "needs_image": state.get("needs_image", False),
-        "score": state.get("score", 0)
+        "score": state.get("score", 0),
+        "evaluation": state.get("evaluation", {})
     })
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:

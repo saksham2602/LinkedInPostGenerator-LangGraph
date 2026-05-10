@@ -1,6 +1,7 @@
 from typing import TypedDict, List, Dict, Any, Optional
 
 from dotenv import load_dotenv
+from evaluation.store import save_evaluation
 from langgraph.graph import StateGraph, END
 from content.content_type_selector import select_content_type
 from content.topic_selector import select_topic
@@ -36,6 +37,7 @@ class AgentState(TypedDict, total=False):
     memory_saved: bool
     ranked_trends: list
     image_error: str
+    evaluation: Dict[str, Any]
 
 
 def fetch_trends_node(state):
@@ -120,6 +122,12 @@ def should_retry(state):
     return "visual_decision"
 
 
+def evaluate_node(state):
+    print("\n[Node] Evaluating post...")
+
+    return save_evaluation(state)
+
+
 def image_prompt_node(state):
     print("\n[Node] Generating image prompt...")
 
@@ -163,7 +171,7 @@ def route_visual(state):
     if state.get("needs_image"):
         return "image_prompt"
 
-    return "memory"
+    return "evaluate"
 
 
 builder = StateGraph(AgentState)
@@ -175,6 +183,7 @@ builder.add_node("contrarian", contrarian_node)
 builder.add_node("write", write_post_node)
 builder.add_node("review", review_post_node)
 builder.add_node("score", score_node)
+builder.add_node("evaluate", evaluate_node)
 builder.add_node("visual_decision", decide_visual)
 builder.add_node("image_prompt", image_prompt_node)
 builder.add_node("image", image_node)
@@ -204,7 +213,8 @@ builder.add_conditional_edges(
 )
 
 builder.add_edge("image_prompt", "image")
-builder.add_edge("image", "memory")
+builder.add_edge("image", "evaluate")
+builder.add_edge("evaluate", "memory")
 builder.add_edge("memory", END)
 
 graph = builder.compile()

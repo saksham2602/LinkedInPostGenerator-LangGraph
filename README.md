@@ -15,6 +15,7 @@ Posting to LinkedIn is intentionally disabled. The app is built around a human a
 - Streamlit dashboard for previewing, editing, downloading, and approving posts
 - CLI mode for generating and saving a post from the terminal
 - Post memory to reduce repeated topics
+- Evaluation metrics for quality, human tone, specificity, CTA quality, and source validity
 
 ## Project Structure
 
@@ -45,6 +46,9 @@ Posting to LinkedIn is intentionally disabled. The app is built around a human a
 |   |-- visual_decider.py
 |   |-- image_prompt.py
 |   `-- image_generator.py
+|-- evaluation/               # Deterministic quality metrics and history
+|   |-- metrics.py
+|   `-- store.py
 |-- storage/                  # Memory persistence
 |   `-- memory_store.py
 |-- data/                     # Generated posts and post memory
@@ -112,6 +116,7 @@ In the dashboard you can:
 - Download the post
 - Download the generated image
 - Save an approved post to `approved_posts/`
+- Inspect quality metrics and evaluation history
 - Inspect saved memory and raw LangGraph state
 
 The **Post to LinkedIn** button is disabled by design.
@@ -138,13 +143,15 @@ The workflow is defined in `agent/graph.py`:
 8. Review and clean the post.
 9. Score the result.
 10. Retry writing if the score is below 7, up to 3 attempts.
-11. Decide whether an image is useful.
-12. Generate an image prompt and image when needed.
-13. Save the final state to memory.
+11. Evaluate the final post with deterministic metrics.
+12. Decide whether an image is useful.
+13. Generate an image prompt and image when needed.
+14. Save the final state to memory.
 
 ## Output Files
 
 - `data/post_memory.json` stores generated post history.
+- `data/evaluations.json` stores post evaluation history.
 - `data/post_<timestamp>.txt` stores CLI-generated posts.
 - `images/post_image.png` stores the latest CLI-generated image.
 - `approved_posts/post_<timestamp>.txt` stores dashboard-approved posts.
@@ -167,6 +174,41 @@ The source adapters live in `sources/adapters/`:
 - Discussion sources such as Reddit and Hacker News are treated as signals, not verified news.
 - Image generation requires `HF_TOKEN`; failures are shown in the app and do not stop post generation.
 - The project currently has no automated LinkedIn publishing integration.
+
+## Evaluation Metrics
+
+Each generated post is evaluated and saved to `data/evaluations.json`.
+
+Tracked metrics include:
+
+- `evaluation_score`: average of clarity, human tone, specificity, source validity, and CTA quality
+- `clarity_score`: penalizes long/awkward structure, banned phrases, raw URLs, and hashtags
+- `human_tone_score`: penalizes generic CTAs, template language, and AI/corporate phrasing
+- `specificity_score`: rewards concrete technical terms and numeric detail
+- `source_faithfulness_score`: checks whether the final source line matches the selected source
+- `cta_quality_score`: penalizes generic engagement endings
+- supporting counts such as word count, question count, banned phrase count, generic CTA count, and raw URL count
+
+## Benchmark Workflow
+
+Use this process to create resume-ready numbers:
+
+1. Run the app and generate 10 to 20 posts before a prompt change.
+2. Save the average metrics from the Evaluation tab.
+3. Improve the prompts, reviewer, or cleaner.
+4. Generate another 10 to 20 posts.
+5. Compare before vs after:
+   - Average evaluation score
+   - Average human tone score
+   - Generic CTA rate
+   - Source validity rate
+   - Average retry count
+
+Example resume bullet:
+
+```text
+Built a LangGraph-based AI content agent with an evaluation layer tracking post quality, human tone, specificity, source validity, generic CTA rate, and retry count across generated samples.
+```
 
 ## Troubleshooting
 
