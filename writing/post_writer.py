@@ -125,8 +125,21 @@ Avoid these words/phrases:
 - My takeaway:
 - What are your thoughts
 - How can we ensure
+- How do you ensure
 - develop strategies
+- In AI development
 - user preferences and behaviors
+- perform optimally
+- robust systems
+- unseen scenarios
+- striking the right balance
+- promising guarantees
+- critical factor
+- practical implications
+- addresses the challenge
+- informed decisions
+- mechanisms
+- How do you manage this trade-off
 - advancement
 - boundaries of
 
@@ -157,6 +170,13 @@ Good:
 Do not use a visible template.
 Do not include "My takeaway:".
 Do not write a paragraph that only says the world is complex or unpredictable.
+
+If the source is arXiv or a research paper:
+- Translate the paper into a practical engineering problem.
+- Avoid academic filler like "promising guarantees" or "robust systems".
+- Explain what a builder would actually decide differently.
+- Good angle: "how much data is enough before trusting an algorithm selector?"
+- End with a concrete observation, not a question.
 
 Post context:
 

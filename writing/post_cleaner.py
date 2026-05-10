@@ -17,6 +17,26 @@ BANNED_REPLACEMENTS = {
     "dynamic and unpredictable nature": "messiness",
     "develop strategies": "build systems",
     "utilizing": "using",
+    "a important": "an important",
+    "In AI development, ": "",
+    "perform optimally": "work well",
+    "more robust systems": "more reliable systems",
+    "robust systems": "reliable systems",
+    "unseen scenarios": "new cases",
+    "striking the right balance": "finding the right tradeoff",
+    "promising guarantees": "useful bounds",
+    "critical factor": "hard part",
+    "practical implications": "practical use",
+    "addresses the challenge": "looks at the problem",
+    "informed decisions": "better choices",
+    "mechanisms": "systems",
+    "how much training data do you need to ensure future success?": "how much training data is enough before trusting the selector later.",
+    "providing insights into": "looking at",
+    "dynamic adaptation": "the selector changing over time",
+    "valuable adaptive improvements": "useful updates",
+    "This research offers a clearer path for engineers to make better choices about when to trust their algorithm selectors.": "That is the useful part: it gives builders a way to reason about trust before the selector is put to work.",
+    "This is important for": "That matters for",
+    "ensuring that": "making sure",
 }
 
 GENERIC_CTA_PATTERNS = [
@@ -24,6 +44,10 @@ GENERIC_CTA_PATTERNS = [
     r"\n*Let's discuss!?\s*(?=\n+Source:|\Z)",
     r"\n*Curious to know what you think\.?\s*(?=\n+Source:|\Z)",
     r"\n*How can we ensure [^\n?]+\?\s*(?=\n+Source:|\Z)",
+    r"\n*How do you ensure [^\n?]+\?\s*(?=\n+Source:|\Z)",
+    r"\n*How do you handle [^\n?]+\?\s*(?=\n+Source:|\Z)",
+    r"\n*How do you manage [^\n?]+\?\s*(?=\n+Source:|\Z)",
+    r"\n*How do you manage this trade-?off in your projects\?\s*(?=\n+Source:|\Z)",
 ]
 
 
@@ -52,6 +76,17 @@ def clean_post(post: str, topic=None) -> str:
         cleaned = re.sub(
             r"Source:\s*(News Outlet|Unknown|Source)\s*$",
             f"Source: {source_name}",
+            cleaned,
+            flags=re.IGNORECASE
+        )
+
+    source_type = topic.get("source_type", "") if isinstance(topic, dict) else ""
+    is_paper_source = source_name.lower() == "arxiv" or source_type.lower() == "arxiv"
+
+    if is_paper_source:
+        cleaned = re.sub(
+            r"^When selecting algorithms adaptively based on past performance, how much training data is enough before you can trust the selector\?",
+            "Adaptive algorithm selection has a practical failure mode: you need enough training data before you can trust the selector later.",
             cleaned,
             flags=re.IGNORECASE
         )
@@ -95,5 +130,8 @@ def clean_post(post: str, topic=None) -> str:
         r"\1\n\nSource:",
         cleaned
     )
+
+    if cleaned:
+        cleaned = cleaned[0].upper() + cleaned[1:]
 
     return cleaned

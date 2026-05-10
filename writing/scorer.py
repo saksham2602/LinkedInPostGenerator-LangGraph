@@ -19,6 +19,11 @@ Give low score if:
 - has phrases like "let's delve", "future of AI", "bridging the gap"
 - repeats the same abstract idea without adding concrete details
 - uses placeholder sources like "Source: News Outlet"
+- says "perform optimally", "robust systems", "unseen scenarios", or "striking the right balance"
+- ends with "How do you manage this trade-off in your projects?"
+- ends with "How do you ensure..."
+- starts with "In AI development"
+- uses academic filler like "critical factor", "practical implications", "mechanisms", or "addresses the challenge"
 
 Return ONLY one number.
 
