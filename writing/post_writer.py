@@ -1,0 +1,178 @@
+from langchain_ollama import ChatOllama
+
+llm = ChatOllama(
+    model="qwen2.5:7b",
+    temperature=0.35
+)
+
+
+def generate_post(state):
+    topic = state.get("topic", {})
+
+    title = topic.get("title", "")
+    summary = topic.get("summary", "")
+    source = topic.get("source", "Source")
+    url = topic.get("url", "")
+
+    content_type = state.get("content_type", "AI trend")
+    insight = state.get("compressed_insight", "")
+
+    source_type = topic.get("source_type", "")
+
+    prompt = f"""
+You are writing a high-quality LinkedIn post for a technical AI audience.
+-WRITE LIKE A HUMAN AT ANY COST. The post should feel like it was written by a thoughtful engineer, not an AI.
+-Use the content type to guide the style and angle of the post, but do not feeled constrained by it. The content type is a hint, not a rule.
+-Start with a sharp hook or observation.
+-Explain the topic simply.
+The post should feel:
+- thoughtful
+- sharp
+- concise
+- natural
+- written by a real builder
+
+Audience:
+- engineers
+- AI developers
+- technical recruiters
+- startup builders
+
+Writing style:
+- conversational but intelligent
+- avoid corporate tone
+- avoid motivational fluff
+- avoid sounding like ChatGPT
+- avoid generic excitement
+- prefer concrete observations
+- slightly opinionated is good
+
+STRICT RULES:
+- Output ONLY the final LinkedIn post
+- No title
+- No hashtags
+- No markdown links
+- No raw URL inside the post body
+- No emojis unless genuinely useful
+- Do not invent personal experience
+- Do not invent author names, paper results, metrics, or background
+- Do not overclaim
+- Keep it between 140 and 220 words
+
+NEVER start with:
+- "As an engineer"
+- "I came across"
+- "This highlights"
+- "It's fascinating"
+- "In today's AI landscape"
+- "In the rapidly evolving"
+- "Excited to share"
+STRICT ANTI-INVENTION RULES:
+- Never write in first person unless the source explicitly supports it.
+- Do not say "I encountered", "I experienced", "I worked on", or "I noticed in my own work".
+- You may say "One thing that stood out..." but not fake personal involvement.
+- Do not invent urgency, risk, or impact level.
+- Do not turn a discussion into a confirmed fact.
+- If the source is Hacker News, Reddit, or a discussion forum, say "A discussion raised..." not "revealed" or "proved".
+Avoid these words/phrases:
+- As a young AI engineer
+- I've encountered
+- lively conversation
+- pressing issue
+- substantial errors
+- Wouldn't it be
+- Let's discuss
+- share our thoughts
+- utilizing
+- preserving the intended content
+- revolutionary
+- game-changing
+- transformative
+- cutting-edge
+- fascinating
+- exciting
+- underscores
+- emphasizes
+- delve
+-seamless user experiences
+-technical hurdles
+-loom large
+-paramount concerns
+-disparate systems
+-significant challenge
+-demands attention
+-grappled with
+-predicaments
+-mitigate these risks
+-careful consideration
+-potential impact
+-additional complexity
+-the question remains
+-what strategies have you found successful
+- landscape
+- future of AI
+- AI community
+- changing the world
+- Experience the
+- remarkable
+- undeniably impressive
+- Curious to know
+- Let's discuss
+- How soon can we expect
+- The secret lies
+- My perspective:
+- advancement
+- boundaries of
+End with a specific technical question, not a generic CTA.
+Example:
+Bad: "Let's discuss!"
+Good: "Would you trust a robot trained for one task extremely well, or one that adapts imperfectly across many tasks?"
+Prefer concrete engineering words over academic words.
+Example:
+Bad:
+"formidable challenges due to the intricate nature of these systems"
+
+Good:
+"these systems change over time, depend on physical constraints, and can fail in rare edge cases"
+Preferred structure:
+1. Start with a sharp hook or observation.
+2. Explain the topic simply.
+3. Mention the technical implication.
+4. Add one limitation, risk, or open question.
+5. Add a personal takeaway.
+6. End with a thoughtful question.
+7. Add source at the end.
+
+Post context:
+
+Title:
+{title}
+
+Summary:
+{summary}
+
+Content type:
+{content_type}
+
+Insight:
+{insight}
+
+Source name:
+{source}
+
+Source URL:
+{url}
+
+Source formatting rule:
+At the end, write only:
+Source type:
+{source_type}
+If source_type is "hackernews" or "reddit":
+- Do not present the content as verified news.
+- Frame it as a discussion or signal.
+- Avoid strong claims like "this proves", "revealed", or "confirmed".
+
+Do NOT include the raw URL.
+"""
+
+    return llm.invoke(prompt).content.strip()
