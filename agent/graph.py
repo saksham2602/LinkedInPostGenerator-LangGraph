@@ -135,9 +135,51 @@ def review_post_node(state):
         state.get("topic", {})
     )
 
+    post_body = cleaned.split("Source:", 1)[0].strip()
+
+    if len(post_body.split()) < 60:
+        cleaned = build_fallback_post(state)
+
     return {
         "final_post": cleaned
     }
+
+
+def build_fallback_post(state):
+    topic = state.get("topic", {})
+
+    if not isinstance(topic, dict):
+        topic = {}
+
+    title = topic.get("title", "This AI project")
+    summary = topic.get("summary", "")
+    source = topic.get("source", "Source")
+    url = topic.get("url", "")
+    content_type = state.get("content_type", "TECH_BREAKDOWN")
+    insight = state.get("compressed_insight") or state.get("contrarian_insight") or ""
+
+    source_line = (
+        f"Source: [{source}]({url})"
+        if url
+        else f"Source: {source}"
+    )
+
+    if content_type == "PROJECT_SHOWCASE":
+        opening = f"{title} is useful demo material because it gives the AI agent idea something concrete to inspect."
+    else:
+        opening = f"{title} is a useful signal for builders working with AI systems."
+
+    details = summary or "The selected source points to an engineering problem around agents, model behavior, or AI workflow design."
+    takeaway = insight or "The practical lesson is to judge the system by the workflow it supports, not only by the model sitting inside it."
+
+    return "\n\n".join([
+        opening,
+        details,
+        "The interesting part is not just that another AI tool exists. It is how the pieces fit together: source selection, reasoning, fallback behavior, evaluation, and the point where a human still reviews the output.",
+        takeaway,
+        "For an interview demo, that architecture is easier to defend than a black-box generator that only returns polished text.",
+        source_line,
+    ])
 
 
 def score_node(state):

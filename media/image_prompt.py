@@ -1,7 +1,13 @@
-from langchain_ollama import ChatOllama
+import os
 
-llm = ChatOllama(
-    model="mistral",
+from dotenv import load_dotenv
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+load_dotenv()
+
+llm = ChatNVIDIA(
+    model="google/gemma-3n-e4b-it",
+    api_key=os.getenv("NVIDIA_API_KEY"),
     temperature=0.2
 )
 

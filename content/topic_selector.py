@@ -1,12 +1,19 @@
+import json
+import os
+import re
+
+from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
-import json
-import re
+
 from storage.memory_store import get_recent_memory
+
+load_dotenv()
 
 llm = ChatNVIDIA(
   model="upstage/solar-10.7b-instruct",
-  api_key="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", 
+  api_key=os.getenv("NVIDIA_API_KEY"),
+  max_tokens=300,
 )
 
 
@@ -60,6 +67,33 @@ def _topic_key(item):
     )
 
 
+def _short_text(value, limit=280):
+    text = str(value or "").strip()
+
+    if len(text) <= limit:
+        return text
+
+    return text[:limit].rsplit(" ", 1)[0] + "..."
+
+
+def _compact_trend(item):
+    return {
+        "title": _short_text(item.get("title"), 160),
+        "source": item.get("source", ""),
+        "source_type": item.get("source_type", ""),
+        "url": item.get("url", ""),
+        "summary": _short_text(item.get("summary"), 320),
+        "ranking_score": item.get("ranking_score", 0),
+    }
+
+
+def _compact_memory_item(item):
+    return {
+        "title": _short_text(item.get("title"), 160),
+        "source": item.get("source", ""),
+    }
+
+
 def _find_exact_item(parsed, trends):
     parsed_url, parsed_title = _topic_key(parsed)
 
@@ -84,16 +118,16 @@ def select_topic(trends):
     if not filtered_trends:
         filtered_trends = trends
 
-    candidates = filtered_trends[:10]
+    candidates = filtered_trends[:6]
 
     trends_text = json.dumps(
-    candidates,
-    indent=2
-)
+        [_compact_trend(item) for item in candidates],
+        separators=(",", ":")
+    )
     memory_text = json.dumps(
-    recent_memory,
-    indent=2
-)
+        [_compact_memory_item(item) for item in recent_memory[:8]],
+        separators=(",", ":")
+    )
 
     prompt = f"""
 You are selecting EXACTLY ONE topic for a LinkedIn post.
@@ -113,7 +147,7 @@ Rules:
 - Prefer GitHub repositories only when the repo description is clearly technical or AI-adjacent
 - Pick ONE item only
 - Select only from Available items
-- Copy title, source, url, and summary exactly from the selected item
+- Copy title, source, url, and summary exactly from the selected available item
 - Use the exact URL from the item
 - Do not invent source names or links
 

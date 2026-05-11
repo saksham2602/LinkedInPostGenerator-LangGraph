@@ -1,7 +1,7 @@
 import os
 
-from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
+from huggingface_hub import InferenceClient
 
 
 load_dotenv()
@@ -14,6 +14,8 @@ client = InferenceClient(
 
 
 def generate_image(prompt):
+    if not os.getenv("HF_TOKEN"):
+        raise ValueError("HF_TOKEN is missing. Add it to .env to enable image generation.")
 
     image = client.text_to_image(
         prompt,

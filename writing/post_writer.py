@@ -1,9 +1,13 @@
+import os
+
+from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+
+load_dotenv()
 
 llm = ChatNVIDIA(
   model="stepfun-ai/step-3.5-flash",
-  api_key="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",
-  
+  api_key=os.getenv("NVIDIA_API_KEY"),
 )
 
 
