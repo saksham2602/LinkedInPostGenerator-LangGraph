@@ -9,29 +9,17 @@ load_dotenv()
 llm = ChatNVIDIA(
   model="google/gemma-2-2b-it",
   api_key=os.getenv("NVIDIA_API_KEY"),
+  temperature=0.1,
+  max_tokens=8,
 )
 
 
 def score_post(post):
     prompt = f"""
-Score this LinkedIn post from 1 to 10.
+Return one integer from 1 to 10 for this LinkedIn post.
 
-Give low score if:
-- contains emojis
-- contains hashtags
-- sounds motivational
-- sounds generic
-- overclaims
-- repeats the same visible template in a stiff way
-- ends with "What are your thoughts" or another generic CTA
-- has phrases like "let's delve", "future of AI", "bridging the gap"
-- repeats the same abstract idea without adding concrete details
-- uses placeholder sources like "Source: News Outlet"
-- says "perform optimally", "robust systems", "unseen scenarios", or "striking the right balance"
-- ends with "How do you manage this trade-off in your projects?"
-- ends with "How do you ensure..."
-- starts with "In AI development"
-- uses academic filler like "critical factor", "practical implications", "mechanisms", or "addresses the challenge"
+Score high if it is specific, technical, grounded in the source, and human.
+Score low if it has emojis, hashtags, hype, generic CTA, fake claims, weak source, or corporate filler.
 
 Return ONLY one number.
 
