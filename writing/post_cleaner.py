@@ -54,6 +54,14 @@ GENERIC_CTA_PATTERNS = [
 def clean_post(post: str, topic=None) -> str:
     topic = topic or {}
     source_name = topic.get("source", "") if isinstance(topic, dict) else ""
+    source_url = topic.get("url", "") if isinstance(topic, dict) else ""
+    expected_source_line = (
+        f"Source: [{source_name}]({source_url})"
+        if source_name and source_url
+        else f"Source: {source_name}"
+        if source_name
+        else ""
+    )
     cleaned = post
 
     for bad, good in BANNED_REPLACEMENTS.items():
@@ -72,7 +80,15 @@ def clean_post(post: str, topic=None) -> str:
             flags=re.IGNORECASE
         )
 
-    if source_name:
+    if expected_source_line:
+        cleaned = re.sub(
+            r"Source:\s*(?:\[[^\]]+\]\([^)]+\)|[^\n]+)\s*$",
+            expected_source_line,
+            cleaned,
+            flags=re.IGNORECASE
+        )
+
+    elif source_name:
         cleaned = re.sub(
             r"Source:\s*(News Outlet|Unknown|Source)\s*$",
             f"Source: {source_name}",
@@ -91,18 +107,30 @@ def clean_post(post: str, topic=None) -> str:
             flags=re.IGNORECASE
         )
 
-    # Convert markdown links like [Link] - <url> to plain URL
+    # Convert markdown links like [Link] - <url> to plain URL outside the source line.
     cleaned = re.sub(
         r"\[Link\]\s*-\s*<([^>]+)>",
         r"\1",
         cleaned
     )
 
-    cleaned = re.sub(
-        r"\[([^\]]+)\]\(([^)]+)\)",
-        r"\2",
-        cleaned
-    )
+    lines = cleaned.splitlines()
+    cleaned_lines = []
+
+    for line in lines:
+        if line.strip().lower().startswith("source:"):
+            cleaned_lines.append(line)
+            continue
+
+        cleaned_lines.append(
+            re.sub(
+                r"\[([^\]]+)\]\(([^)]+)\)",
+                r"\2",
+                line
+            )
+        )
+
+    cleaned = "\n".join(cleaned_lines)
 
     # Remove angle brackets around URLs
     cleaned = re.sub(
@@ -130,6 +158,15 @@ def clean_post(post: str, topic=None) -> str:
         r"\1\n\nSource:",
         cleaned
     )
+
+    if expected_source_line and not cleaned.strip().endswith(expected_source_line):
+        cleaned = re.sub(
+            r"\n*Source:\s*(?:\[[^\]]+\]\([^)]+\)|[^\n]+)\s*$",
+            "",
+            cleaned,
+            flags=re.IGNORECASE
+        ).strip()
+        cleaned = f"{cleaned}\n\n{expected_source_line}"
 
     if cleaned:
         cleaned = cleaned[0].upper() + cleaned[1:]

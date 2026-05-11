@@ -11,6 +11,7 @@ from media.image_prompt import generate_image_prompt
 from media.visual_decider import decide_visual
 from sources.trend_fetcher import get_trends
 from storage.memory_store import save_to_memory
+from storage.trend_cache import load_ranked_trend_cache, save_ranked_trend_cache
 from writing.contrarian_insight import generate_contrarian_insight
 from writing.insight_compressor import compress_insight
 from writing.post_cleaner import clean_post
@@ -38,18 +39,54 @@ class AgentState(TypedDict, total=False):
     ranked_trends: list
     image_error: str
     evaluation: Dict[str, Any]
+    trend_cache_hit: bool
+    trend_cache_cached_at: str
 
 
 def fetch_trends_node(state):
     print("\n[Node] Fetching trends...")
+
+    cached = load_ranked_trend_cache()
+
+    if cached:
+        print(
+            f"Using cached ranked trends from {cached['cached_at']}"
+        )
+
+        return {
+            "trends": cached["trends"],
+            "ranked_trends": cached["ranked_trends"],
+            "trend_cache_hit": True,
+            "trend_cache_cached_at": cached["cached_at"],
+        }
 
     trends = get_trends()
 
     print(f"Fetched {len(trends)} trends")
 
     return {
-        "trends": trends
+        "trends": trends,
+        "trend_cache_hit": False
     }
+
+
+def rank_trends_node(state):
+    if state.get("trend_cache_hit") and state.get("ranked_trends"):
+        print("\n[Node] Ranking trends...")
+        print("Using cached ranking")
+
+        return {
+            "ranked_trends": state["ranked_trends"]
+        }
+
+    result = rank_trends(state)
+
+    save_ranked_trend_cache(
+        state.get("trends", []),
+        result.get("ranked_trends", [])
+    )
+
+    return result
 
 
 def select_topic_node(state):
@@ -189,7 +226,7 @@ builder.add_node("image_prompt", image_prompt_node)
 builder.add_node("image", image_node)
 builder.add_node("compress_insight", compress_insight)
 builder.add_node("memory", save_to_memory)
-builder.add_node("rank" , rank_trends)
+builder.add_node("rank" , rank_trends_node)
 
 builder.set_entry_point("fetch")
 

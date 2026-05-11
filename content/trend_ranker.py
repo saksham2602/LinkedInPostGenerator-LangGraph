@@ -1,8 +1,9 @@
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
 
-llm = ChatOllama(
-    model="mistral",
-    temperature=0
+llm = ChatNVIDIA(
+  model="mistralai/mistral-large-3-675b-instruct-2512",
+  api_key="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", 
 )
 
 SOURCE_WEIGHTS = {

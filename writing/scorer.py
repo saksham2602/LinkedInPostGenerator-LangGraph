@@ -1,7 +1,10 @@
-from langchain_ollama import ChatOllama
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import re
 
-llm = ChatOllama(model="mistral", temperature=0)
+llm = ChatNVIDIA(
+  model="mistralai/mistral-large-3-675b-instruct-2512",
+  api_key="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", 
+)
 
 
 def score_post(post):
@@ -14,7 +17,7 @@ Give low score if:
 - sounds motivational
 - sounds generic
 - overclaims
-- uses a visible template like "My takeaway:"
+- repeats the same visible template in a stiff way
 - ends with "What are your thoughts" or another generic CTA
 - has phrases like "let's delve", "future of AI", "bridging the gap"
 - repeats the same abstract idea without adding concrete details

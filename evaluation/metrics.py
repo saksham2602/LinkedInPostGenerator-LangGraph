@@ -25,7 +25,6 @@ BANNED_PHRASES = [
     "striking the right balance",
     "promising guarantees",
     "practical implications",
-    "my takeaway:",
 ]
 
 TECH_TERMS = [
@@ -69,7 +68,7 @@ def _sentence_count(text):
     return max(1, len(sentences))
 
 
-def _source_line(post, expected_source):
+def _source_line(post, expected_source, expected_url=""):
     lines = [
         line.strip()
         for line in post.strip().splitlines()
@@ -83,23 +82,39 @@ def _source_line(post, expected_source):
         }
 
     last_line = lines[-1]
-    expected = f"Source: {expected_source}".lower()
+    expected_plain = f"Source: {expected_source}".lower()
+    expected_link = (
+        f"Source: [{expected_source}]({expected_url})".lower()
+        if expected_source and expected_url
+        else ""
+    )
 
     return {
         "source_present": last_line.lower().startswith("source:"),
-        "source_line_valid": last_line.lower() == expected if expected_source else last_line.lower().startswith("source:"),
+        "source_line_valid": (
+            last_line.lower() in {expected_plain, expected_link}
+            if expected_source
+            else last_line.lower().startswith("source:")
+        ),
     }
 
 
 def evaluate_post(post, topic=None):
     topic = topic or {}
     expected_source = topic.get("source", "") if isinstance(topic, dict) else ""
+    expected_url = topic.get("url", "") if isinstance(topic, dict) else ""
 
     words = _word_count(post)
     sentences = _sentence_count(post)
     avg_sentence_words = round(words / sentences, 2)
     question_count = post.count("?")
-    raw_url_count = len(re.findall(r"https?://", post))
+    post_without_source = re.sub(
+        r"\n*Source:\s*(?:\[[^\]]+\]\([^)]+\)|[^\n]+)\s*$",
+        "",
+        post.strip(),
+        flags=re.IGNORECASE
+    )
+    raw_url_count = len(re.findall(r"https?://", post_without_source))
     hashtag_count = len(re.findall(r"(^|\s)#\w+", post))
     generic_cta_count = _count_matches(GENERIC_CTA_PATTERNS, post)
     banned_phrase_count = _count_matches(
@@ -110,7 +125,11 @@ def evaluate_post(post, topic=None):
         [fr"\b{re.escape(term)}\b" for term in TECH_TERMS],
         post
     )
-    source_metrics = _source_line(post, expected_source)
+    source_metrics = _source_line(
+        post,
+        expected_source,
+        expected_url
+    )
 
     readability_penalty = 0
     if avg_sentence_words > 28:

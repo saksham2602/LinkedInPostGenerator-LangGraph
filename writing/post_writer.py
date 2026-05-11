@@ -1,8 +1,9 @@
-from langchain_ollama import ChatOllama
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 
-llm = ChatOllama(
-    model="qwen2.5:7b",
-    temperature=0.35
+llm = ChatNVIDIA(
+  model="stepfun-ai/step-3.5-flash",
+  api_key="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",
+  
 )
 
 
@@ -13,6 +14,11 @@ def generate_post(state):
     summary = topic.get("summary", "")
     source = topic.get("source", "Source")
     url = topic.get("url", "")
+    source_line = (
+        f"Source: [{source}]({url})"
+        if url
+        else f"Source: {source}"
+    )
 
     content_type = state.get("content_type", "AI trend")
     insight = state.get("compressed_insight", "")
@@ -22,8 +28,15 @@ def generate_post(state):
     prompt = f"""
 Write a LinkedIn post for a technical AI audience.
 
-The post should sound like a thoughtful builder explaining one concrete thing they noticed.
-It should not sound like an AI newsletter, a consultant memo, or a motivational post.
+Aim for this feel:
+- a smart person explaining one useful technical point
+- short paragraphs, like someone posting from notes
+- specific enough for engineers, simple enough to read quickly
+- calm, plain, and slightly opinionated
+
+Do not write an essay.
+Do not write a newsletter summary.
+Do not sound like a consultant, brand page, or motivational post.
 
 Use the content type as a loose hint, not a template.
 
@@ -34,29 +47,27 @@ Audience:
 - startup builders
 
 Writing style:
-- conversational but intelligent
-- avoid corporate tone
-- avoid motivational fluff
-- avoid sounding like ChatGPT
-- avoid generic excitement
-- prefer concrete observations
-- slightly opinionated is good
-- use simple engineering language
-- name real failure modes when possible
-- vary sentence length like a human would
+- Open with the actual technical subject in one clean sentence
+- Keep most paragraphs 1 or 2 sentences
+- Prefer concrete observations over broad claims
+- Name real failure modes when the source supports them
+- Use simple engineering language
+- Vary sentence length like a human would
+- It is okay to use a small pivot like "The hard part:" or "My takeaway:" if it fits
+- Avoid corporate tone, academic filler, motivational fluff, and generic excitement
 
 STRICT RULES:
 - Output ONLY the final LinkedIn post
 - No title
 - No hashtags
-- No markdown links
+- No markdown links except the final source line
 - No raw URL inside the post body
 - No emojis
 - Do not invent personal experience
 - Do not invent author names, paper results, metrics, or background
 - Do not overclaim
-- Keep it between 140 and 220 words
-- Keep the final source line exactly: Source: {source}
+- Keep it between 110 and 180 words
+- Keep the final source line exactly: {source_line}
 
 NEVER start with:
 - "As an engineer"
@@ -122,7 +133,6 @@ Avoid these words/phrases:
 - How soon can we expect
 - The secret lies
 - My perspective:
-- My takeaway:
 - What are your thoughts
 - How can we ensure
 - How do you ensure
@@ -167,16 +177,41 @@ Bad:
 Good:
 "A shopping agent has to deal with changing prices, seller trust, delivery dates, refunds, and users changing their mind halfway through."
 
-Do not use a visible template.
-Do not include "My takeaway:".
+Shape to imitate:
+1. Start with one direct sentence about why the topic matters.
+2. Add one short paragraph with what the source looked at.
+3. Explain the technical decision or failure mode.
+4. Add a short takeaway or concrete closing question.
+5. End with the source line.
+
+Do not use this shape so rigidly that every post feels identical.
 Do not write a paragraph that only says the world is complex or unpredictable.
+
+Example of the target cadence and level of detail:
+Power grid control is one of those AI use cases where "good performance" is not enough.
+
+A recent arXiv paper explores voltage control using deep reinforcement learning.
+
+The technical challenge is not only choosing the right DRL algorithm. It is also deciding what the model should observe, how the state space is represented, and how the reward function is designed.
+
+That matters because reward design can quietly shape the behavior of the entire system.
+
+A model might learn to improve voltage stability in simulation, but still behave unpredictably under demand changes, sensor noise, renewable fluctuations, or fault conditions.
+
+My takeaway:
+
+For AI in power systems, the hard part is not just training an agent. It is proving that the agent remains reliable when the grid behaves differently from the training environment.
+
+Would you trust a DRL-based controller after strong simulation results, or only after testing it against rare failure scenarios too?
+
+Source: arXiv
 
 If the source is arXiv or a research paper:
 - Translate the paper into a practical engineering problem.
 - Avoid academic filler like "promising guarantees" or "robust systems".
 - Explain what a builder would actually decide differently.
 - Good angle: "how much data is enough before trusting an algorithm selector?"
-- End with a concrete observation, not a question.
+- End with either a concrete observation or one specific technical question.
 
 Post context:
 
@@ -200,14 +235,14 @@ Source URL:
 
 Source formatting rule:
 At the end, write exactly:
-Source: {source}
+{source_line}
 
 If source_type is "hackernews" or "reddit":
 - Do not present the content as verified news.
 - Frame it as a discussion or signal.
 - Avoid strong claims like "this proves", "revealed", or "confirmed".
 
-Do NOT include the raw URL.
+Do NOT include the raw URL outside the final markdown source line.
 """
 
     return llm.invoke(prompt).content.strip()

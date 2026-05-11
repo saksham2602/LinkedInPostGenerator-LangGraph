@@ -23,12 +23,24 @@ TECH_KEYWORDS = [
 ]
 def normalize_item(item):
     if isinstance(item, dict):
-        return {
+        normalized = {
             "source": item.get("source", "unknown"),
             "title": str(item.get("title", "")).strip(),
             "summary": str(item.get("summary", "")).strip(),
             "url": item.get("url", "")
         }
+
+        for key in [
+            "source_type",
+            "published_at",
+            "language",
+            "stars",
+            "ranking_score",
+        ]:
+            if key in item:
+                normalized[key] = item.get(key)
+
+        return normalized
 
     if isinstance(item, str):
         return {
@@ -40,6 +52,8 @@ def normalize_item(item):
 
     return None
 def is_tech_relevant(item):
+    source_type = item.get("source_type", "").lower()
+    source = item.get("source", "").lower()
 
     text = (
         item.get("title", "")
@@ -51,6 +65,9 @@ def is_tech_relevant(item):
         keyword in text
         for keyword in TECH_KEYWORDS
     )
+
+    if source_type == "github" or source == "github":
+        return matches >= 1
 
     return matches >= 2
 
