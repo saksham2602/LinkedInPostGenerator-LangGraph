@@ -8,6 +8,7 @@ langchain-nvidia-ai-endpoints
 langchain-ollama
 langgraph
 pillow
+pandas
 python-dotenv
 requests
 streamlit
