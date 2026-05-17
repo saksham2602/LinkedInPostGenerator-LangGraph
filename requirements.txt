@@ -9,6 +9,7 @@ langchain-ollama
 langgraph
 pillow
 pandas
+psycopg[binary]
 python-dotenv
 requests
 streamlit

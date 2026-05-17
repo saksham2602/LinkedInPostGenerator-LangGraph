@@ -2,10 +2,29 @@ import json
 import os
 from datetime import datetime
 
+from psycopg.types.json import Jsonb
+
+from storage.db import database_enabled, ensure_schema, get_connection
+
 MEMORY_FILE = "data/post_memory.json"
 
 
 def load_memory():
+    if database_enabled():
+        ensure_schema()
+
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT record
+                    FROM post_memory
+                    ORDER BY created_at ASC, id ASC
+                    """
+                )
+
+                return [row[0] for row in cur.fetchall()]
+
     if not os.path.exists(MEMORY_FILE):
         return []
 
@@ -14,13 +33,9 @@ def load_memory():
 
 
 def save_to_memory(state):
-    os.makedirs("data", exist_ok=True)
-
-    memory = load_memory()
-
     topic = state.get("topic", {})
 
-    memory.append({
+    record = {
         "date": datetime.now().isoformat(),
         "title": topic.get("title", "") if isinstance(topic, dict) else str(topic),
         "source": topic.get("source", "") if isinstance(topic, dict) else "",
@@ -30,7 +45,26 @@ def save_to_memory(state):
         "needs_image": state.get("needs_image", False),
         "score": state.get("score", 0),
         "evaluation": state.get("evaluation", {})
-    })
+    }
+
+    if database_enabled():
+        ensure_schema()
+
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO post_memory (record) VALUES (%s)",
+                    (Jsonb(record),)
+                )
+
+        return {
+            "memory_saved": True
+        }
+
+    os.makedirs("data", exist_ok=True)
+
+    memory = load_memory()
+    memory.append(record)
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)

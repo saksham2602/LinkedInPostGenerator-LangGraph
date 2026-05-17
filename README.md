@@ -67,6 +67,7 @@ Posting to LinkedIn is intentionally disabled. The app is built around a human a
   - NewsData API key
   - Currents API key
   - Hugging Face token for image generation
+- Optional Neon/Postgres database URL for deployed persistent memory
 
 Pull the Ollama models before running the app:
 
@@ -96,9 +97,11 @@ Create a `.env` file in the project root:
 NEWS_API_KEY=your_newsdata_key
 CURRENTS_API_KEY=your_currents_key
 HF_TOKEN=your_huggingface_token
+NVIDIA_API_KEY=your_nvidia_api_key
+DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
 ```
 
-The app can still collect some sources without paid API keys, but the NewsData and Currents fetchers will skip/fail if their keys are missing.
+The app can still collect some sources without paid API keys, but the NewsData and Currents fetchers will skip/fail if their keys are missing. If `DATABASE_URL` is set, post memory, evaluations, and ranked trend cache are stored in Postgres. If it is missing, the app falls back to local JSON files under `data/`.
 
 ## Run the Streamlit App
 
@@ -148,14 +151,19 @@ The workflow is defined in `agent/graph.py`:
 13. Generate an image prompt and image when needed.
 14. Save the final state to memory.
 
-## Output Files
+## Persistence
 
-- `data/post_memory.json` stores generated post history.
-- `data/evaluations.json` stores post evaluation history.
+- With `DATABASE_URL`, generated post history is stored in the `post_memory` table.
+- With `DATABASE_URL`, post evaluation history is stored in the `evaluations` table.
+- With `DATABASE_URL`, ranked trend cache is stored in the `trend_cache` table.
+- Without `DATABASE_URL`, `data/post_memory.json` stores generated post history.
+- Without `DATABASE_URL`, `data/evaluations.json` stores post evaluation history.
 - `data/post_<timestamp>.txt` stores CLI-generated posts.
 - `images/post_image.png` stores the latest CLI-generated image.
 - `approved_posts/post_<timestamp>.txt` stores dashboard-approved posts.
 - `approved_posts/latest_image.png` stores the latest dashboard image preview.
+
+The database tables are created automatically on first app run.
 
 ## Content Sources
 
@@ -177,7 +185,7 @@ The source adapters live in `sources/adapters/`:
 
 ## Evaluation Metrics
 
-Each generated post is evaluated and saved to `data/evaluations.json`.
+Each generated post is evaluated and saved to the configured database, or to `data/evaluations.json` when no database is configured.
 
 Tracked metrics include:
 

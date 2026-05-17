@@ -1,13 +1,31 @@
 import json
 import os
 
+from psycopg.types.json import Jsonb
+
 from evaluation.metrics import evaluate_post, summarize_evaluations
+from storage.db import database_enabled, ensure_schema, get_connection
 
 
 EVALUATION_FILE = "data/evaluations.json"
 
 
 def load_evaluations():
+    if database_enabled():
+        ensure_schema()
+
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT record
+                    FROM evaluations
+                    ORDER BY created_at ASC, id ASC
+                    """
+                )
+
+                return [row[0] for row in cur.fetchall()]
+
     if not os.path.exists(EVALUATION_FILE):
         return []
 
@@ -16,8 +34,6 @@ def load_evaluations():
 
 
 def save_evaluation(state):
-    os.makedirs("data", exist_ok=True)
-
     topic = state.get("topic", {})
     post = state.get("final_post", "")
     metrics = evaluate_post(post, topic)
@@ -31,6 +47,22 @@ def save_evaluation(state):
         "retry_count": state.get("retry_count", 0),
         "needs_image": state.get("needs_image", False),
     }
+
+    if database_enabled():
+        ensure_schema()
+
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO evaluations (record) VALUES (%s)",
+                    (Jsonb(record),)
+                )
+
+        return {
+            "evaluation": record
+        }
+
+    os.makedirs("data", exist_ok=True)
 
     evaluations = load_evaluations()
     evaluations.append(record)
