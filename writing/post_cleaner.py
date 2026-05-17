@@ -50,6 +50,13 @@ GENERIC_CTA_PATTERNS = [
     r"\n*How do you manage this trade-?off in your projects\?\s*(?=\n+Source:|\Z)",
 ]
 
+META_DEMO_PATTERNS = [
+    r"\n*The interesting part is not just that another AI tool exists\.[^\n]*(?:\n|$)",
+    r"\n*For an interview demo,[^\n]*(?:\n|$)",
+    r"\n*This architecture is easier to defend[^\n]*(?:\n|$)",
+    r"\n*black-box generator[^\n]*(?:\n|$)",
+]
+
 
 def clean_post(post: str, topic=None) -> str:
     topic = topic or {}
@@ -73,6 +80,14 @@ def clean_post(post: str, topic=None) -> str:
         )
 
     for pattern in GENERIC_CTA_PATTERNS:
+        cleaned = re.sub(
+            pattern,
+            "",
+            cleaned,
+            flags=re.IGNORECASE
+        )
+
+    for pattern in META_DEMO_PATTERNS:
         cleaned = re.sub(
             pattern,
             "",

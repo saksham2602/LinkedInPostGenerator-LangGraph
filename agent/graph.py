@@ -41,6 +41,7 @@ class AgentState(TypedDict, total=False):
     evaluation: Dict[str, Any]
     trend_cache_hit: bool
     trend_cache_cached_at: str
+    enable_image: bool
 
 
 def fetch_trends_node(state):
@@ -164,22 +165,82 @@ def build_fallback_post(state):
         else f"Source: {source}"
     )
 
-    if content_type == "PROJECT_SHOWCASE":
-        opening = f"{title} is useful demo material because it gives the AI agent idea something concrete to inspect."
-    else:
-        opening = f"{title} is a useful signal for builders working with AI systems."
+    summary_sentences = split_sentences(summary)
+    concrete_detail = pick_grounded_detail(
+        summary_sentences
+    )
+    second_detail = pick_grounded_detail(
+        summary_sentences,
+        skip=concrete_detail
+    )
 
-    details = summary or "The selected source points to an engineering problem around agents, model behavior, or AI workflow design."
-    takeaway = insight or "The practical lesson is to judge the system by the workflow it supports, not only by the model sitting inside it."
+    opening = f"{title} points to a practical engineering tradeoff."
+    details = concrete_detail or summary or "The source describes a technical system with a design choice that needs validation."
+    takeaway = insight or second_detail or "The safer takeaway is to validate the system against future cases, not only the examples used while designing it."
 
     return "\n\n".join([
         opening,
         details,
-        "The interesting part is not just that another AI tool exists. It is how the pieces fit together: source selection, reasoning, fallback behavior, evaluation, and the point where a human still reviews the output.",
+        "The failure mode is trusting a result because it looks strong on the training examples, while missing how the same choice behaves on new inputs.",
         takeaway,
-        "For an interview demo, that architecture is easier to defend than a black-box generator that only returns polished text.",
+        "For builders, the useful question is not only whether the method works once, but how much evidence is enough before using it as a selection rule.",
         source_line,
     ])
+
+
+def split_sentences(text):
+    if not text:
+        return []
+
+    parts = [
+        part.strip()
+        for part in text.replace("\n", " ").split(".")
+        if part.strip()
+    ]
+
+    return [
+        part + "."
+        for part in parts
+    ]
+
+
+def pick_grounded_detail(sentences, skip=""):
+    useful_terms = [
+        "overfitting",
+        "training",
+        "performance",
+        "portfolio",
+        "selector",
+        "guarantee",
+        "tradeoff",
+        "parameter",
+        "validation",
+        "future",
+    ]
+
+    for sentence in sentences:
+        if sentence == skip:
+            continue
+
+        lower = sentence.lower()
+
+        if any(term in lower for term in useful_terms):
+            return shorten_text(sentence, 260)
+
+    for sentence in sentences:
+        if sentence != skip:
+            return shorten_text(sentence, 260)
+
+    return ""
+
+
+def shorten_text(text, limit):
+    text = " ".join(str(text or "").split())
+
+    if len(text) <= limit:
+        return text
+
+    return text[:limit].rsplit(" ", 1)[0] + "."
 
 
 def score_node(state):
@@ -247,7 +308,7 @@ def image_node(state):
 
 
 def route_visual(state):
-    if state.get("needs_image"):
+    if state.get("enable_image") and state.get("needs_image"):
         return "image_prompt"
 
     return "evaluate"

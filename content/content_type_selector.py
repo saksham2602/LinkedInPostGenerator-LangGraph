@@ -5,6 +5,11 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
 
 load_dotenv()
+llm=ChatOllama(
+    model="gemma-2-2b-it",
+    temperature=0.2,    top_p=0.7,
+    
+)
 
 llm = ChatNVIDIA(
   model="google/gemma-2-2b-it",

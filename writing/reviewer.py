@@ -54,6 +54,9 @@ Output rules:
 - No markdown links except the final source line
 - No fake personal experience
 - No invented claims, metrics, incidents, companies, or author names
+- Do not copy the original summary verbatim
+- Do not mention this app, demos, interviews, dashboards, or content generation
+- Every paragraph must be grounded in the original topic, source type, or draft
 - End with exactly: {source_line}
 
 Style rules:

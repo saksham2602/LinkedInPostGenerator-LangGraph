@@ -1,4 +1,5 @@
 import os
+from html import escape
 from datetime import datetime
 
 import streamlit as st
@@ -11,7 +12,7 @@ from storage.memory_store import load_memory
 
 st.set_page_config(
     page_title="LinkedIn AI Content Agent",
-    page_icon="🤖",
+    page_icon="AI",
     layout="wide"
 )
 
@@ -20,24 +21,157 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .main {
-        background-color: #0f1117;
+    :root {
+        --bg: #0b0f14;
+        --panel: #111821;
+        --panel-2: #151d29;
+        --line: #263241;
+        --muted: #9aa7b5;
+        --text: #f4f7fb;
+        --accent: #ff4b4b;
+        --accent-2: #62d0a2;
     }
 
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.4rem;
         padding-bottom: 2rem;
+        max-width: 1180px;
+    }
+
+    [data-testid="stAppViewContainer"] {
+        background:
+            radial-gradient(circle at 20% 0%, rgba(255, 75, 75, 0.12), transparent 28%),
+            linear-gradient(180deg, #0b0f14 0%, #0d1118 100%);
+    }
+
+    [data-testid="stHeader"] {
+        background: transparent;
+    }
+
+    .app-hero {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 24px 26px;
+        background: linear-gradient(135deg, rgba(17, 24, 33, 0.98), rgba(13, 18, 26, 0.94));
+        margin-bottom: 18px;
+    }
+
+    .app-kicker {
+        color: var(--accent-2);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .app-title {
+        color: var(--text);
+        font-size: 2.2rem;
+        line-height: 1.1;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+    }
+
+    .app-subtitle {
+        color: var(--muted);
+        font-size: 0.98rem;
+        max-width: 760px;
+        margin: 0;
+    }
+
+    .control-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(17, 24, 33, 0.92);
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin: 12px 0 22px 0;
     }
 
     .metric-card {
-        background: #161b22;
-        padding: 18px;
-        border-radius: 14px;
-        border: 1px solid #30363d;
+        background: rgba(17, 24, 33, 0.94);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        min-height: 96px;
+    }
+
+    .metric-label {
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+
+    .metric-value {
+        color: var(--text);
+        font-size: 1.65rem;
+        line-height: 1.1;
+        font-weight: 750;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .metric-note {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-top: 6px;
+    }
+
+    .section-title {
+        color: var(--text);
+        font-size: 1.3rem;
+        font-weight: 780;
+        margin: 0 0 12px 0;
+    }
+
+    .topic-strip {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px 16px;
+        background: rgba(21, 29, 41, 0.9);
+        margin-bottom: 16px;
+    }
+
+    .topic-title {
+        color: var(--text);
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .topic-meta {
+        color: var(--muted);
+        font-size: 0.88rem;
+    }
+
+    .empty-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 34px 28px;
+        background: rgba(17, 24, 33, 0.94);
+        margin-top: 18px;
+    }
+
+    .empty-panel h3 {
+        color: var(--text);
+        margin: 0 0 8px 0;
+    }
+
+    .empty-panel p {
+        color: var(--muted);
+        margin: 0;
     }
 
     .small-muted {
-        color: #8b949e;
+        color: var(--muted);
         font-size: 0.9rem;
     }
 
@@ -50,10 +184,51 @@ st.markdown(
         font-size: 0.8rem;
         font-weight: 600;
     }
+
+    div[data-testid="stTextArea"] textarea {
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #151a24;
+        color: var(--text);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    div[data-testid="stTabs"] button {
+        font-weight: 650;
+    }
+
+    @media (max-width: 900px) {
+        .metric-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .app-title {
+            font-size: 1.7rem;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
+
+
+def metric_card(label, value, note=""):
+    return {
+        "label": label,
+        "value": value,
+        "note": note,
+    }
+
+
+def render_metric_grid(items):
+    columns = st.columns(len(items))
+
+    for column, item in zip(columns, items):
+        with column:
+            st.metric(item["label"], item["value"])
+            if item.get("note"):
+                st.caption(item["note"])
 
 
 # ---------- Session ----------
@@ -65,27 +240,43 @@ if "edited_post" not in st.session_state:
 
 
 # ---------- Header ----------
-left, right = st.columns([0.75, 0.25])
+left, right = st.columns([0.72, 0.28])
 
 with left:
-    st.title("LinkedIn AI Content Agent")
-    st.caption(
-        "Multi-source tech intelligence → LangGraph reasoning → post + image → human approval"
+    st.markdown(
+        """
+        <div class="app-hero">
+            <div class="app-kicker">LangGraph content workflow</div>
+            <h1 class="app-title">LinkedIn AI Content Agent</h1>
+            <p class="app-subtitle">
+                Multi-source trend collection, topic ranking, post generation,
+                scoring feedback, and human approval in one demo-ready dashboard.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 with right:
-    st.markdown("###")
+    st.markdown("**Run Controls**")
+    enable_image = st.toggle(
+        "Generate image",
+        value=False,
+        help="Image generation is slower, so keep it off for a faster demo."
+    )
+
     run_btn = st.button(
         "Generate New Post",
         type="primary",
         use_container_width=True
     )
+    st.caption("Fast path keeps image generation off.")
 
 
 # ---------- Run Agent ----------
 if run_btn:
     with st.spinner("Running LangGraph agent..."):
-        result = graph.invoke({})
+        result = graph.invoke({"enable_image": enable_image})
         st.session_state.result = result
         st.session_state.edited_post = result.get("final_post", "")
 
@@ -95,7 +286,18 @@ result = st.session_state.result
 
 # ---------- Empty State ----------
 if not result:
-    st.info("Click **Generate New Post** to run the agent.")
+    st.markdown(
+        """
+        <div class="empty-panel">
+            <h3>Ready to generate a post</h3>
+            <p>
+                Click Generate New Post to fetch ranked trends, select a topic,
+                draft a LinkedIn post, score it, and prepare it for approval.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.stop()
 
 
@@ -106,27 +308,46 @@ evaluation_score = evaluation.get("evaluation_score", "-")
 content_type = result.get("content_type", "-")
 needs_image = result.get("needs_image", False)
 topic = result.get("topic", {})
+source = topic.get("source", "unknown") if isinstance(topic, dict) else "unknown"
+topic_title = topic.get("title", "Selected topic") if isinstance(topic, dict) else str(topic)
 
-m1, m2, m3, m4, m5 = st.columns(5)
+render_metric_grid([
+    {
+        "label": "Quality Score",
+        "value": score,
+        "note": "LLM feedback loop",
+    },
+    {
+        "label": "Eval Score",
+        "value": evaluation_score,
+        "note": "deterministic checks",
+    },
+    {
+        "label": "Content Type",
+        "value": content_type,
+        "note": "selected format",
+    },
+    {
+        "label": "Image",
+        "value": "Generated" if result.get("image_bytes") else "Skipped",
+        "note": "optional path",
+    },
+    {
+        "label": "Source",
+        "value": source,
+        "note": "selected signal",
+    },
+])
 
-with m1:
-    st.metric("Quality Score", score)
-
-with m2:
-    st.metric("Eval Score", evaluation_score)
-
-with m3:
-    st.metric("Content Type", content_type)
-
-with m4:
-    st.metric("Image", "Yes" if needs_image else "No")
-
-with m5:
-    source = topic.get("source", "unknown") if isinstance(topic, dict) else "unknown"
-    st.metric("Source", source)
-
-
-st.divider()
+st.markdown(
+    f"""
+    <div class="topic-strip">
+        <div class="topic-title">{escape(str(topic_title))}</div>
+        <div class="topic-meta">Selected from {escape(str(source))} after ranking and memory checks</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # ---------- Main Tabs ----------
@@ -146,12 +367,12 @@ with tab1:
     col1, col2 = st.columns([0.58, 0.42])
 
     with col1:
-        st.subheader("Final Post")
+        st.markdown('<div class="section-title">Final Post</div>', unsafe_allow_html=True)
 
         edited_post = st.text_area(
             "Edit before approval",
             value=st.session_state.edited_post,
-            height=330,
+            height=360,
             label_visibility="collapsed"
         )
 
@@ -188,10 +409,10 @@ with tab1:
                 help="Add LinkedIn API later after approval workflow is stable."
             )
 
-        st.caption("Posting is disabled for now. Manual approval first is safer.")
+        st.caption("Approval-first workflow: no automated posting is performed.")
 
     with col2:
-        st.subheader("Generated Image")
+        st.markdown('<div class="section-title">Generated Image</div>', unsafe_allow_html=True)
 
         if result.get("image_bytes"):
             image = result["image_bytes"]
@@ -222,7 +443,16 @@ with tab1:
                 result["image_error"]
             )
         else:
-            st.info("No image generated for this post.")
+            st.info(
+                "Image generation was skipped. Turn on Generate image before running the agent if you want one."
+            )
+
+        with st.expander("Selected topic", expanded=True):
+            if isinstance(topic, dict):
+                st.write(topic.get("title", ""))
+                st.caption(topic.get("reason", ""))
+            else:
+                st.write(topic)
 
 
 # ---------- Agent Reasoning Tab ----------
@@ -273,25 +503,36 @@ with tab2:
 
 # ---------- Evaluation Tab ----------
 with tab3:
-    st.subheader("Current Post Evaluation")
+    st.markdown('<div class="section-title">Current Post Evaluation</div>', unsafe_allow_html=True)
 
     if evaluation:
-        e1, e2, e3, e4, e5 = st.columns(5)
-
-        with e1:
-            st.metric("Overall", evaluation.get("evaluation_score", "-"))
-
-        with e2:
-            st.metric("Human Tone", evaluation.get("human_tone_score", "-"))
-
-        with e3:
-            st.metric("Specificity", evaluation.get("specificity_score", "-"))
-
-        with e4:
-            st.metric("Source", evaluation.get("source_faithfulness_score", "-"))
-
-        with e5:
-            st.metric("CTA", evaluation.get("cta_quality_score", "-"))
+        render_metric_grid([
+            {
+                "label": "Overall",
+                "value": evaluation.get("evaluation_score", "-"),
+                "note": "combined score",
+            },
+            {
+                "label": "Human Tone",
+                "value": evaluation.get("human_tone_score", "-"),
+                "note": "anti-generic checks",
+            },
+            {
+                "label": "Specificity",
+                "value": evaluation.get("specificity_score", "-"),
+                "note": "technical detail",
+            },
+            {
+                "label": "Source",
+                "value": evaluation.get("source_faithfulness_score", "-"),
+                "note": "source line match",
+            },
+            {
+                "label": "CTA",
+                "value": evaluation.get("cta_quality_score", "-"),
+                "note": "ending quality",
+            },
+        ])
 
         st.dataframe(
             pd.DataFrame([evaluation]),
@@ -300,7 +541,7 @@ with tab3:
     else:
         st.info("No evaluation available for this run.")
 
-    st.subheader("Evaluation History")
+    st.markdown('<div class="section-title">Evaluation History</div>', unsafe_allow_html=True)
 
     evaluations = load_evaluations()
     summary = get_evaluation_summary()

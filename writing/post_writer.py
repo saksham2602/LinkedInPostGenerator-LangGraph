@@ -70,6 +70,9 @@ STRICT RULES:
 - Do not invent personal experience
 - Do not invent author names, paper results, metrics, or background
 - Do not overclaim
+- Do not copy the source summary verbatim
+- Do not mention this app, demos, interviews, dashboards, or content generation
+- Every paragraph must be grounded in the title, summary, source type, or insight below
 - Keep it between 110 and 180 words
 - Keep the final source line exactly: {source_line}
 
