@@ -99,9 +99,11 @@ CURRENTS_API_KEY=your_currents_key
 HF_TOKEN=your_huggingface_token
 NVIDIA_API_KEY=your_nvidia_api_key
 DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
+MEMORY_RETENTION_DAYS=30
 ```
 
 The app can still collect some sources without paid API keys, but the NewsData and Currents fetchers will skip/fail if their keys are missing. If `DATABASE_URL` is set, post memory, evaluations, and ranked trend cache are stored in Postgres. If it is missing, the app falls back to local JSON files under `data/`.
+`MEMORY_RETENTION_DAYS` controls how long generated post memory is kept before old records are automatically removed. It defaults to 30 days.
 
 ## Run the Streamlit App
 
@@ -164,6 +166,7 @@ The workflow is defined in `agent/graph.py`:
 - `approved_posts/latest_image.png` stores the latest dashboard image preview.
 
 The database tables are created automatically on first app run.
+Post memory older than `MEMORY_RETENTION_DAYS` is automatically removed whenever memory is loaded.
 
 ## Content Sources
 
