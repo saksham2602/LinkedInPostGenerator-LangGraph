@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 llm=ChatOllama(
@@ -46,7 +47,7 @@ Rules:
 Return only the label.
 """
 
-    content_type = llm.invoke(prompt).content.strip().upper()
+    content_type = invoke_with_retries(llm, prompt).upper()
 
     print("Content type:", content_type)
 

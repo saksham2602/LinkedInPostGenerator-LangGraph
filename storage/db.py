@@ -58,5 +58,14 @@ def ensure_schema():
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS generation_usage (
+                    usage_date DATE PRIMARY KEY,
+                    usage_count INTEGER NOT NULL DEFAULT 0,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
 
     _SCHEMA_READY = True

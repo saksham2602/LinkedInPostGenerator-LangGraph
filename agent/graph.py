@@ -12,6 +12,7 @@ from media.visual_decider import decide_visual
 from sources.trend_fetcher import get_trends
 from storage.memory_store import save_to_memory
 from storage.trend_cache import load_ranked_trend_cache, save_ranked_trend_cache
+from storage.usage_store import assert_generation_allowed, record_generation
 from writing.contrarian_insight import generate_contrarian_insight
 from writing.insight_compressor import compress_insight
 from writing.post_cleaner import clean_post
@@ -42,12 +43,29 @@ class AgentState(TypedDict, total=False):
     trend_cache_hit: bool
     trend_cache_cached_at: str
     enable_image: bool
+    topic_mode: str
+    user_topic: str
+    topic_search_fallback: bool
+    generation_usage: Dict[str, Any]
+
+
+def generation_limit_node(state):
+    print("\n[Node] Checking generation limit...")
+
+    usage = assert_generation_allowed()
+
+    return {
+        "generation_usage": usage
+    }
 
 
 def fetch_trends_node(state):
     print("\n[Node] Fetching trends...")
 
-    cached = load_ranked_trend_cache()
+    user_topic = str(state.get("user_topic", "")).strip()
+    use_user_topic = state.get("topic_mode") == "Use my topic" and bool(user_topic)
+
+    cached = None if use_user_topic else load_ranked_trend_cache()
 
     if cached:
         print(
@@ -61,13 +79,21 @@ def fetch_trends_node(state):
             "trend_cache_cached_at": cached["cached_at"],
         }
 
-    trends = get_trends()
+    trends = get_trends(user_topic if use_user_topic else None)
+    topic_search_fallback = False
+
+    if use_user_topic and not trends:
+        print("No direct topic matches found; falling back to general trend pool")
+        trends = get_trends()
+        topic_search_fallback = True
 
     print(f"Fetched {len(trends)} trends")
 
     return {
         "trends": trends,
-        "trend_cache_hit": False
+        "trend_cache_hit": False,
+        "user_topic": user_topic,
+        "topic_search_fallback": topic_search_fallback,
     }
 
 
@@ -82,10 +108,11 @@ def rank_trends_node(state):
 
     result = rank_trends(state)
 
-    save_ranked_trend_cache(
-        state.get("trends", []),
-        result.get("ranked_trends", [])
-    )
+    if not state.get("user_topic"):
+        save_ranked_trend_cache(
+            state.get("trends", []),
+            result.get("ranked_trends", [])
+        )
 
     return result
 
@@ -93,9 +120,15 @@ def rank_trends_node(state):
 def select_topic_node(state):
     print("\n[Node] Selecting topic...")
 
-    topic = select_topic(
-        state["ranked_trends"]
-    )
+    try:
+        topic = select_topic(
+            state["ranked_trends"],
+            state.get("user_topic", "")
+        )
+    except Exception as error:
+        print("\n[Topic Selection Failed]")
+        print(str(error))
+        topic = state.get("ranked_trends", [{}])[0]
 
     print("\nSelected topic:")
     print(topic)
@@ -106,11 +139,25 @@ def select_topic_node(state):
 
 
 def content_type_node(state):
-    return select_content_type(state)
+    try:
+        return select_content_type(state)
+    except Exception as error:
+        print("\n[Content Type Failed]")
+        print(str(error))
+        return {
+            "content_type": "TECH_BREAKDOWN"
+        }
 
 
 def contrarian_node(state):
-    return generate_contrarian_insight(state)
+    try:
+        return generate_contrarian_insight(state)
+    except Exception as error:
+        print("\n[Insight Failed]")
+        print(str(error))
+        return {
+            "contrarian_insight": "The useful engineering question is what changes in implementation, testing, or deployment when this source is treated as a real signal."
+        }
 
 
 def write_post_node(state):
@@ -118,18 +165,30 @@ def write_post_node(state):
 
     retry_count = state.get("retry_count", 0)
 
+    try:
+        draft_post = generate_post(state)
+    except Exception as error:
+        print("\n[Draft Failed]")
+        print(str(error))
+        draft_post = build_fallback_post(state)
+
     return {
-        "draft_post": generate_post(state),
+        "draft_post": draft_post,
         "retry_count": retry_count + 1
     }
 
 def review_post_node(state):
     print("\n[Node] Reviewing draft...")
 
-    reviewed = review_post(
-        state["draft_post"],
-        state.get("topic", {})
-    )
+    try:
+        reviewed = review_post(
+            state["draft_post"],
+            state.get("topic", {})
+        )
+    except Exception as error:
+        print("\n[Review Failed]")
+        print(str(error))
+        reviewed = state["draft_post"]
 
     cleaned = clean_post(
         reviewed,
@@ -271,10 +330,17 @@ def evaluate_node(state):
 def image_prompt_node(state):
     print("\n[Node] Generating image prompt...")
 
-    return {
-        "image_prompt": generate_image_prompt(
+    try:
+        image_prompt = generate_image_prompt(
             state["final_post"]
         )
+    except Exception as error:
+        print("\n[Image Prompt Failed]")
+        print(str(error))
+        image_prompt = ""
+
+    return {
+        "image_prompt": image_prompt
     }
 
 
@@ -314,8 +380,17 @@ def route_visual(state):
     return "evaluate"
 
 
+def record_generation_node(state):
+    print("\n[Node] Recording generation usage...")
+
+    return {
+        "generation_usage": record_generation()
+    }
+
+
 builder = StateGraph(AgentState)
 
+builder.add_node("generation_limit", generation_limit_node)
 builder.add_node("fetch", fetch_trends_node)
 builder.add_node("topic", select_topic_node)
 builder.add_node("content_type", content_type_node)
@@ -327,12 +402,27 @@ builder.add_node("evaluate", evaluate_node)
 builder.add_node("visual_decision", decide_visual)
 builder.add_node("image_prompt", image_prompt_node)
 builder.add_node("image", image_node)
-builder.add_node("compress_insight", compress_insight)
 builder.add_node("memory", save_to_memory)
+builder.add_node("record_generation", record_generation_node)
 builder.add_node("rank" , rank_trends_node)
 
-builder.set_entry_point("fetch")
 
+def compress_insight_node(state):
+    try:
+        return compress_insight(state)
+    except Exception as error:
+        print("\n[Insight Compression Failed]")
+        print(str(error))
+        return {
+            "compressed_insight": state.get("contrarian_insight", "")
+        }
+
+
+builder.add_node("compress_insight", compress_insight_node)
+
+builder.set_entry_point("generation_limit")
+
+builder.add_edge("generation_limit", "fetch")
 builder.add_edge("fetch", "rank")
 builder.add_edge("rank", "topic")
 builder.add_edge("topic", "content_type")
@@ -355,6 +445,7 @@ builder.add_conditional_edges(
 builder.add_edge("image_prompt", "image")
 builder.add_edge("image", "evaluate")
 builder.add_edge("evaluate", "memory")
-builder.add_edge("memory", END)
+builder.add_edge("memory", "record_generation")
+builder.add_edge("record_generation", END)
 
 graph = builder.compile()

@@ -7,6 +7,7 @@ from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
 
 from storage.memory_store import get_recent_memory
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -109,7 +110,16 @@ def _find_exact_item(parsed, trends):
     return None
 
 
-def select_topic(trends):
+def select_topic(trends, user_topic=""):
+    if not trends:
+        return {
+            "title": user_topic or "AI engineering update",
+            "source": "No source",
+            "url": "",
+            "summary": "No matching source items were found during this run.",
+            "reason": "Fallback topic because source fetching returned no usable items.",
+        }
+
     recent_memory = get_recent_memory()
     filtered_trends = filter_repeated_topics(
     trends,
@@ -129,10 +139,24 @@ def select_topic(trends):
         separators=(",", ":")
     )
 
+    topic_instruction = ""
+    if user_topic:
+        topic_instruction = f"""
+User requested topic:
+{user_topic}
+
+Extra rules:
+- Select an item that is clearly related to the requested topic
+- Prefer the freshest concrete news, repository, paper, or discussion about that topic
+- Use the requested topic as direction, but ground the post in one available item
+"""
+
     prompt = f"""
 You are selecting EXACTLY ONE topic for a LinkedIn post.
 
 You must avoid repetitive content.
+
+{topic_instruction}
 
 Recently covered topics:
 {memory_text}
@@ -165,7 +189,7 @@ Available items:
 {trends_text}
 """
 
-    raw = llm.invoke(prompt).content.strip()
+    raw = invoke_with_retries(llm, prompt)
 
     parsed = extract_json(raw)
 

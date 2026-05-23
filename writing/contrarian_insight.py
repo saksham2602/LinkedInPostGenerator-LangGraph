@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -34,7 +35,7 @@ Avoid generic lines like:
 Return only 1-2 sentences.
 """
 
-    insight = llm.invoke(prompt).content.strip()
+    insight = invoke_with_retries(llm, prompt)
 
     print("Insight:", insight)
 

@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -72,6 +73,8 @@ STRICT RULES:
 - Do not overclaim
 - Do not copy the source summary verbatim
 - Do not mention this app, demos, interviews, dashboards, or content generation
+- Do not merge words together. Every normal English word boundary must include a space.
+- Before finalizing, silently proofread for missing spaces, spelling, and grammar.
 - Every paragraph must be grounded in the title, summary, source type, or insight below
 - Keep it between 110 and 180 words
 - Keep the final source line exactly: {source_line}
@@ -113,21 +116,21 @@ Avoid these words/phrases:
 - underscores
 - emphasizes
 - delve
--seamless user experiences
--technical hurdles
--loom large
--paramount concerns
--disparate systems
--significant challenge
--demands attention
--grappled with
--predicaments
--mitigate these risks
--careful consideration
--potential impact
--additional complexity
--the question remains
--what strategies have you found successful
+- seamless user experiences
+- technical hurdles
+- loom large
+- paramount concerns
+- disparate systems
+- significant challenge
+- demands attention
+- grappled with
+- predicaments
+- mitigate these risks
+- careful consideration
+- potential impact
+- additional complexity
+- the question remains
+- what strategies have you found successful
 - landscape
 - future of AI
 - AI community
@@ -252,4 +255,4 @@ If source_type is "hackernews" or "reddit":
 Do NOT include the raw URL outside the final markdown source line.
 """
 
-    return llm.invoke(prompt).content.strip()
+    return invoke_with_retries(llm, prompt)

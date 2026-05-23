@@ -3,6 +3,7 @@ import re
 
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -27,7 +28,10 @@ POST:
 {post}
 """
 
-    result = llm.invoke(prompt).content.strip()
+    try:
+        result = invoke_with_retries(llm, prompt)
+    except Exception:
+        return 5
 
     try:
         match = re.search(r"\b10\b|[1-9]", result)

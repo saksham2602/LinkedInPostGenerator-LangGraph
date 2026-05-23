@@ -8,7 +8,7 @@ import pandas as pd
 from agent.graph import graph
 from evaluation.store import get_evaluation_summary, load_evaluations
 from storage.memory_store import load_memory
-
+from storage.usage_store import get_generation_usage
 
 st.set_page_config(
     page_title="LinkedIn AI Content Agent",
@@ -259,6 +259,27 @@ with left:
 
 with right:
     st.markdown("**Run Controls**")
+    generation_usage = get_generation_usage()
+    limit_text = (
+        "unlimited"
+        if generation_usage["limit"] <= 0
+        else f"{generation_usage['used']}/{generation_usage['limit']} used today"
+    )
+    st.caption(f"Post generation limit: {limit_text}")
+
+    topic_mode = st.radio(
+        "Topic Mode",
+        ["Auto discover", "Use my topic"],
+        horizontal=True
+    )
+    user_topic = ""
+
+    if topic_mode == "Use my topic":
+        user_topic = st.text_input(
+            "Topic",
+            placeholder="latest open source AI coding agents"
+        )
+
     enable_image = st.toggle(
         "Generate image",
         value=False,
@@ -268,17 +289,32 @@ with right:
     run_btn = st.button(
         "Generate New Post",
         type="primary",
-        use_container_width=True
+        use_container_width=True,
+        disabled=not generation_usage["allowed"]
     )
     st.caption("Fast path keeps image generation off.")
+
+    if not generation_usage["allowed"]:
+        st.warning("Daily generation limit reached. Try again tomorrow or raise POST_GENERATION_DAILY_LIMIT.")
 
 
 # ---------- Run Agent ----------
 if run_btn:
-    with st.spinner("Running LangGraph agent..."):
-        result = graph.invoke({"enable_image": enable_image})
-        st.session_state.result = result
-        st.session_state.edited_post = result.get("final_post", "")
+    if topic_mode == "Use my topic" and not user_topic.strip():
+        st.warning("Enter a topic first.")
+    else:
+        with st.spinner("Running LangGraph agent..."):
+            try:
+                result = graph.invoke({
+                    "enable_image": enable_image,
+                    "topic_mode": topic_mode,
+                    "user_topic": user_topic.strip(),
+                })
+                st.session_state.result = result
+                st.session_state.edited_post = result.get("final_post", "")
+                st.rerun()
+            except RuntimeError as error:
+                st.error(str(error))
 
 
 result = st.session_state.result

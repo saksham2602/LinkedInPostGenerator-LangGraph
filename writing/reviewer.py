@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -56,6 +57,8 @@ Output rules:
 - No invented claims, metrics, incidents, companies, or author names
 - Do not copy the original summary verbatim
 - Do not mention this app, demos, interviews, dashboards, or content generation
+- Do not merge words together. Every normal English word boundary must include a space.
+- Before finalizing, silently proofread for missing spaces, spelling, and grammar.
 - Every paragraph must be grounded in the original topic, source type, or draft
 - End with exactly: {source_line}
 
@@ -139,4 +142,4 @@ Source: arXiv
 Do not copy examples from these instructions.
 """
 
-    return llm.invoke(prompt).content.strip()
+    return invoke_with_retries(llm, prompt)

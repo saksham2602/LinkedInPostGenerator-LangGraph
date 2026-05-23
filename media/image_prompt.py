@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -35,4 +36,4 @@ Post:
 Return only the image prompt.
 """
 
-    return llm.invoke(prompt).content.strip()
+    return invoke_with_retries(llm, prompt)

@@ -3,7 +3,6 @@ from agent.graph import graph
 from datetime import datetime
 
 import os
-import base64
 
 
 os.makedirs(
@@ -12,7 +11,11 @@ os.makedirs(
 )
 
 
-result = graph.invoke({})
+try:
+    result = graph.invoke({})
+except RuntimeError as error:
+    print(f"\nGeneration stopped: {error}")
+    raise SystemExit(1)
 
 
 final_post = result["final_post"]

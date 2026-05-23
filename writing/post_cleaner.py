@@ -57,6 +57,66 @@ META_DEMO_PATTERNS = [
     r"\n*black-box generator[^\n]*(?:\n|$)",
 ]
 
+JOINED_WORD_REPLACEMENTS = {
+    "alot": "a lot",
+    "aswell": "as well",
+    "inthe": "in the",
+    "ofthe": "of the",
+    "tothe": "to the",
+    "forthe": "for the",
+    "andthe": "and the",
+    "withthe": "with the",
+    "onthe": "on the",
+    "opensource": "open source",
+    "machinelearning": "machine learning",
+    "deeplearning": "deep learning",
+    "largelanguage": "large language",
+    "trainingdata": "training data",
+    "testdata": "test data",
+    "sourcecode": "source code",
+    "userpreferences": "user preferences",
+    "sellertrust": "seller trust",
+    "deliverydates": "delivery dates",
+    "rewarddesign": "reward design",
+    "statespace": "state space",
+    "modelrouting": "model routing",
+    "solverselection": "solver selection",
+    "fallbackchoices": "fallback choices",
+}
+
+
+def _repair_joined_words(text: str) -> str:
+    repaired = re.sub(
+        r"([a-z])([A-Z])",
+        r"\1 \2",
+        text
+    )
+    repaired = re.sub(
+        r"([.!?])(?=[A-Za-z])",
+        r"\1 ",
+        repaired
+    )
+    repaired = re.sub(
+        r"(?<=[a-zA-Z])Source:",
+        r"\n\nSource:",
+        repaired
+    )
+    repaired = re.sub(
+        r"\s+Source:",
+        r"\n\nSource:",
+        repaired
+    )
+
+    for bad, good in JOINED_WORD_REPLACEMENTS.items():
+        repaired = re.sub(
+            fr"\b{bad}\b",
+            good,
+            repaired,
+            flags=re.IGNORECASE
+        )
+
+    return repaired
+
 
 def clean_post(post: str, topic=None) -> str:
     topic = topic or {}
@@ -161,7 +221,15 @@ def clean_post(post: str, topic=None) -> str:
         cleaned
     )
 
+    cleaned = _repair_joined_words(cleaned)
+
     # Cleanup extra spaces/newlines
+    cleaned = re.sub(
+        r"[ \t]{2,}",
+        " ",
+        cleaned
+    )
+
     cleaned = re.sub(
         r"\n{3,}",
         "\n\n",

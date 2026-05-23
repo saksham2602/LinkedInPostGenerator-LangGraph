@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_ollama import ChatOllama
+from writing.llm_utils import invoke_with_retries
 
 load_dotenv()
 
@@ -67,11 +68,7 @@ Summary:
 
     try:
 
-        raw = (
-            llm.invoke(prompt)
-            .content
-            .strip()
-        )
+        raw = invoke_with_retries(llm, prompt)
 
         score = int(raw)
 

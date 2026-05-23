@@ -96,14 +96,17 @@ Create a `.env` file in the project root:
 ```env
 NEWS_API_KEY=your_newsdata_key
 CURRENTS_API_KEY=your_currents_key
+TAVILY_API_KEY=your_tavily_api_key
 HF_TOKEN=your_huggingface_token
 NVIDIA_API_KEY=your_nvidia_api_key
 DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
 MEMORY_RETENTION_DAYS=30
+POST_GENERATION_DAILY_LIMIT=10
 ```
 
-The app can still collect some sources without paid API keys, but the NewsData and Currents fetchers will skip/fail if their keys are missing. If `DATABASE_URL` is set, post memory, evaluations, and ranked trend cache are stored in Postgres. If it is missing, the app falls back to local JSON files under `data/`.
+The app can still collect some sources without paid API keys, but the NewsData, Currents, and Tavily fetchers will skip/fail if their keys are missing. If `DATABASE_URL` is set, post memory, evaluations, and ranked trend cache are stored in Postgres. If it is missing, the app falls back to local JSON files under `data/`.
 `MEMORY_RETENTION_DAYS` controls how long generated post memory is kept before old records are automatically removed. It defaults to 30 days.
+`POST_GENERATION_DAILY_LIMIT` controls how many posts can be generated per day. It defaults to 10. Set it to `0` for unlimited local generation.
 
 ## Run the Streamlit App
 
@@ -116,6 +119,7 @@ Then open the local Streamlit URL shown in the terminal.
 In the dashboard you can:
 
 - Generate a new post
+- Choose auto-discovery or enter a specific topic for targeted source search
 - Review the selected topic and reasoning chain
 - Edit the final post before approval
 - Download the post
@@ -160,6 +164,7 @@ The workflow is defined in `agent/graph.py`:
 - With `DATABASE_URL`, ranked trend cache is stored in the `trend_cache` table.
 - Without `DATABASE_URL`, `data/post_memory.json` stores generated post history.
 - Without `DATABASE_URL`, `data/evaluations.json` stores post evaluation history.
+- Without `DATABASE_URL`, `data/generation_usage.json` stores daily generation counts.
 - `data/post_<timestamp>.txt` stores CLI-generated posts.
 - `images/post_image.png` stores the latest CLI-generated image.
 - `approved_posts/post_<timestamp>.txt` stores dashboard-approved posts.
@@ -174,6 +179,7 @@ The source adapters live in `sources/adapters/`:
 
 - `google_news_tool.py` uses the NewsData API.
 - `currents_news.py` uses the Currents API.
+- `tavily_search.py` uses Tavily web/news search.
 - `reddit_tool.py` reads the `r/artificial` RSS feed.
 - `github_trending_tool.py` scrapes GitHub Trending.
 - `arxiv_tool.py` reads the arXiv `cs.AI` feed.

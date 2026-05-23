@@ -2,18 +2,24 @@ import requests
 from datetime import datetime, timedelta, timezone
 
 
-def fetch_github_trending():
+def fetch_github_trending(query=None):
     since = (
         datetime.now(timezone.utc) - timedelta(days=30)
     ).date().isoformat()
 
     url = "https://api.github.com/search/repositories"
 
-    queries = [
-        f"topic:llm language:python pushed:>{since}",
-        f"topic:artificial-intelligence language:python pushed:>{since}",
-        f"topic:machine-learning language:python pushed:>{since}",
-    ]
+    if query:
+        queries = [
+            f"{query} pushed:>{since}",
+            f"{query} language:python pushed:>{since}",
+        ]
+    else:
+        queries = [
+            f"topic:llm language:python pushed:>{since}",
+            f"topic:artificial-intelligence language:python pushed:>{since}",
+            f"topic:machine-learning language:python pushed:>{since}",
+        ]
 
     repos = []
 

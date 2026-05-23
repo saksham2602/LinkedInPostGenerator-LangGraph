@@ -7,7 +7,7 @@ load_dotenv()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 
-def fetch_google_news():
+def fetch_google_news(query=None):
     if not NEWS_API_KEY:
         raise ValueError("NEWS_API_KEY not found in .env")
 
@@ -15,7 +15,7 @@ def fetch_google_news():
 
     params = {
         "apikey": NEWS_API_KEY,
-        "q": "AI OR artificial intelligence OR LLM OR machine learning",
+        "q": query or "AI OR artificial intelligence OR LLM OR machine learning",
         "language": "en",
         "category": "technology",
         "size": 10,   # important

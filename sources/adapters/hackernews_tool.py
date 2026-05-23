@@ -18,7 +18,12 @@ AI_KEYWORDS = [
 ]
 
 
-def fetch_hn_ai():
+def fetch_hn_ai(query=None):
+    keywords = [
+        word.lower()
+        for word in str(query or "").split()
+        if len(word) > 2
+    ] or AI_KEYWORDS
 
     top = requests.get(
         "https://hacker-news.firebaseio.com/v0/topstories.json"
@@ -36,10 +41,7 @@ def fetch_hn_ai():
 
         title_lower = title.lower()
 
-        if any(
-            keyword in title_lower
-            for keyword in AI_KEYWORDS
-        ):
+        if any(keyword in title_lower for keyword in keywords):
 
             results.append({
                 "source": "hackernews",

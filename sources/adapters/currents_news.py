@@ -7,7 +7,7 @@ load_dotenv()
 CURRENTS_API_KEY = os.getenv("CURRENTS_API_KEY")
 
 
-def fetch_currents_news():
+def fetch_currents_news(query=None):
     if not CURRENTS_API_KEY:
         raise ValueError("CURRENTS_API_KEY not found in .env")
 
@@ -15,7 +15,7 @@ def fetch_currents_news():
 
     params = {
         "apiKey": CURRENTS_API_KEY,
-        "keywords": "artificial intelligence",
+        "keywords": query or "artificial intelligence",
         "language": "en",
         "page_size": 10,
     }

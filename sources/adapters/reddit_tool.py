@@ -1,10 +1,15 @@
 import feedparser
+from urllib.parse import quote_plus
 
 
-def fetch_reddit_ai():
+def fetch_reddit_ai(query=None):
+    if query:
+        feed_url = f"https://www.reddit.com/search.rss?q={quote_plus(query)}"
+    else:
+        feed_url = "https://www.reddit.com/r/artificial/.rss"
 
     feed = feedparser.parse(
-        "https://www.reddit.com/r/artificial/.rss"
+        feed_url
     )
 
     results = []

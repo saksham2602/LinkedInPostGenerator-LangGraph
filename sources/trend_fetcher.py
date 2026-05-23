@@ -71,8 +71,49 @@ def is_tech_relevant(item):
 
     return matches >= 2
 
-def get_trends():
-    raw_items = aggregate_content()
+def _query_terms(query):
+    stop_words = {
+        "a",
+        "an",
+        "and",
+        "for",
+        "in",
+        "of",
+        "on",
+        "or",
+        "the",
+        "to",
+        "with",
+    }
+
+    return [
+        word.strip().lower()
+        for word in str(query or "").replace("-", " ").split()
+        if len(word.strip()) > 2 and word.strip().lower() not in stop_words
+    ]
+
+
+def _matches_query(item, query):
+    terms = _query_terms(query)
+
+    if not terms:
+        return True
+
+    text = (
+        item.get("title", "")
+        + " "
+        + item.get("summary", "")
+        + " "
+        + item.get("source", "")
+    ).lower()
+
+    matches = sum(term in text for term in terms)
+
+    return matches >= 1
+
+
+def get_trends(query=None):
+    raw_items = aggregate_content(query)
 
     seen = set()
     cleaned = []
@@ -88,7 +129,10 @@ def get_trends():
         if not title:
             continue
 
-        if not is_tech_relevant(item):
+        if query and not _matches_query(item, query):
+            continue
+
+        if not query and not is_tech_relevant(item):
             continue
 
         key = title.lower()[:80]

@@ -1,11 +1,17 @@
 import feedparser
+from urllib.parse import quote
 
 
-def fetch_arxiv_ai():
+def fetch_arxiv_ai(query=None):
+    search_query = (
+        f'all:"{query}"'
+        if query
+        else "cat:cs.AI"
+    )
 
     url = (
         "http://export.arxiv.org/api/query?"
-        "search_query=cat:cs.AI"
+        f"search_query={quote(search_query)}"
         "&start=0&max_results=5"
     )
 
